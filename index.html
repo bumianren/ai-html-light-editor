@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI-HTML 轻量编辑器</title>
+  <link rel="stylesheet" href="./ai-html-editor.css">
+  <style>
+    :root {
+      --app-bg: #1d1f22;
+      --panel: #f8f4eb;
+      --panel-2: #fffaf1;
+      --ink: #14161a;
+      --muted: #70736f;
+      --line: #cfc6b4;
+      --accent: #d84f2a;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: var(--app-bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .ai-html-editor-toolbar {
+      width: auto;
+      max-width: none;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      border-left: 0;
+      border-right: 0;
+      border-top: 0;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, .24);
+    }
+
+    .editor-actions,
+    .style-panel {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .editor-actions {
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(20, 22, 26, .12);
+    }
+
+    .style-panel {
+      padding-top: 10px;
+    }
+
+    .style-panel .selected-text {
+      min-width: 220px;
+      max-width: 360px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      color: #6f716d;
+    }
+
+    .style-panel .unit {
+      margin-left: -6px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #55585b;
+    }
+
+    .color-swatches {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(20, 22, 26, .32);
+      padding: 0;
+      border-radius: 999px;
+      box-shadow: inset 0 0 0 2px rgba(255, 250, 241, .72);
+    }
+
+    .file-button {
+      position: relative;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 34px;
+      border: 1px solid #14161a;
+      background: #14161a;
+      color: #fffaf1;
+      padding: 0 14px;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .ai-html-editor-toolbar .file-button {
+      color: #fffaf1;
+    }
+
+    .file-button input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .selector-input {
+      width: 120px !important;
+    }
+
+    .stage {
+      min-height: 0;
+    }
+
+    .preview-wrap {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .drop-zone {
+      margin: 18px;
+      border: 1px dashed rgba(255,255,255,.3);
+      min-height: calc(100vh - 120px);
+      display: grid;
+      place-items: center;
+      color: rgba(255,250,241,.66);
+      text-align: center;
+      padding: 40px;
+    }
+
+    .drop-zone strong {
+      display: block;
+      color: #fffaf1;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    iframe {
+      width: 100%;
+      height: calc(100vh - 64px);
+      border: 0;
+      background: #1d1f22;
+      display: none;
+    }
+
+    body.has-document iframe { display: block; }
+    body.has-document .drop-zone { display: none; }
+
+    .help-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      background: rgba(10, 12, 14, .58);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .help-modal.open {
+      display: flex;
+    }
+
+    .help-card {
+      width: min(680px, calc(100vw - 48px));
+      max-height: calc(100vh - 80px);
+      overflow: auto;
+      background: #f8f4eb;
+      border: 1px solid #14161a;
+      box-shadow: 0 24px 80px rgba(0,0,0,.36);
+      padding: 24px;
+    }
+
+    .help-card h2 {
+      margin: 0 0 12px;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    .help-card p,
+    .help-card li {
+      font-size: 14px;
+      line-height: 1.65;
+      color: #4e514e;
+    }
+
+    .help-card ul {
+      margin: 10px 0 0;
+      padding-left: 20px;
+    }
+
+    .help-card .help-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 1200px) {
+      .ai-html-editor-toolbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      iframe {
+        height: calc(100vh - 220px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="ai-html-editor-toolbar" data-ai-editor="true">
+      <div class="editor-actions">
+        <label class="file-button">打开 HTML
+          <input id="fileInput" type="file" accept=".html,.htm,text/html">
+        </label>
+        <label>页面 <input class="selector-input" id="posterSelector" value=".poster"></label>
+        <label>清晰度 <input id="scaleInput" type="number" min="1" max="4" step="1" value="2"></label>
+        <button id="saveDraft" type="button">保存草稿</button>
+        <button id="resetDraft" type="button">重置草稿</button>
+        <button id="exportHtml" type="button">导出 HTML</button>
+        <button id="toggleEditMode" type="button">切到交互</button>
+        <button id="toggleGuides" type="button">隐藏边框</button>
+        <button id="helpButton" type="button">帮助</button>
+        <button id="saveCurrentPng" type="button">保存当前图</button>
+        <button class="primary" id="saveAllPng" type="button">保存全部图</button>
+      </div>
+      <div class="style-panel">
+        <span class="selected-text" id="selectedTextLabel">未选中文字</span>
+        <button id="fontSizeDown" type="button" disabled>A-</button>
+        <label>字号 <input id="fontSizeInput" type="number" min="12" max="240" step="1" disabled></label>
+        <span class="unit">px</span>
+        <button id="fontSizeUp" type="button" disabled>A+</button>
+        <label>行高 <input id="lineHeightInput" type="number" min="0.8" max="2.4" step="0.02" disabled></label>
+        <label>颜色 <input id="textColorInput" type="color" value="#14161a" disabled></label>
+        <input class="color-value" id="textColorValue" type="text" placeholder="#14161a" disabled>
+        <span class="color-swatches" aria-label="常用颜色">
+          <button class="color-swatch" type="button" data-color="#14161a" style="background:#14161a" title="黑色" disabled></button>
+          <button class="color-swatch" type="button" data-color="#ffffff" style="background:#ffffff" title="白色" disabled></button>
+          <button class="color-swatch" type="button" data-color="#70736f" style="background:#70736f" title="灰色" disabled></button>
+          <button class="color-swatch" type="button" data-color="#d84f2a" style="background:#d84f2a" title="强调色" disabled></button>
+          <button class="color-swatch" type="button" data-color="#0057ff" style="background:#0057ff" title="蓝色" disabled></button>
+          <button class="color-swatch" type="button" data-color="#16a34a" style="background:#16a34a" title="绿色" disabled></button>
+          <button class="color-swatch" type="button" data-color="#f5c400" style="background:#f5c400" title="黄色" disabled></button>
+        </span>
+        <button id="clearTextColor" type="button" disabled>还原颜色</button>
+        <button id="weightNormal" type="button" disabled>常规</button>
+        <button id="weightBold" type="button" disabled>加粗</button>
+        <button id="resetInlineStyle" type="button" disabled>还原样式</button>
+        <div class="ai-html-editor-status" id="status">先打开一个 AI 生成的 HTML 文件。</div>
+      </div>
+    </div>
+
+    <main class="stage">
+      <section class="preview-wrap">
+        <div class="drop-zone" id="dropZone">
+          <div>
+            <strong>打开或拖入一个 HTML 文件</strong>
+            <div>例如：配图粗版.html、学习卡片.html、项目报告.html</div>
+          </div>
+        </div>
+        <iframe id="previewFrame" title="HTML 预览"></iframe>
+      </section>
+    </main>
+  </div>
+
+  <div class="help-modal" id="helpModal" data-ai-editor="true">
+    <div class="help-card">
+      <h2>AI-HTML 轻量编辑器</h2>
+      <p>这个工具用于微调 AI 生成的 HTML。打开文件后，点页面里的文字即可编辑；选中文字块后，可以调整字号、行高、颜色和字重。</p>
+      <ul>
+        <li>推荐每张图 / 每页使用一个 `.poster` 容器。</li>
+        <li>每个 `.poster` 可以写 `data-export-name` 作为导出文件名。</li>
+        <li>点击「隐藏边框」可以预览最终效果。</li>
+        <li>点击「导出 HTML」保存修改后的 HTML。</li>
+        <li>点击「保存当前图」或「保存全部图」导出 PNG。</li>
+      </ul>
+      <div class="help-actions">
+        <button id="closeHelp" type="button">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const editableSelector = [
+      "h1", "h2", "h3", "h4", "p", "li",
+      ".kicker", ".eyebrow", ".title", ".title-xl", ".title-xxl",
+      ".lead", ".body", ".page-no", ".bottom-note > div",
+      ".risk-row .txt", ".question .qtext", ".eq-item strong",
+      ".flow-step .copy", ".split .box h3", ".split .box p",
+      ".course-name", ".course-sub", "[data-editable]"
+    ].join(",");
+
+    const skippedEditableTags = new Set([
+      "SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "META", "LINK", "TITLE", "HEAD",
+      "HTML", "BODY", "SVG", "PATH", "IMG", "PICTURE", "VIDEO", "AUDIO", "CANVAS",
+      "IFRAME", "INPUT", "TEXTAREA", "SELECT", "OPTION", "BR", "HR"
+    ]);
+    const preferredTextContainers = new Set([
+      "A", "BUTTON", "LABEL", "SUMMARY", "TD", "TH", "CAPTION", "FIGCAPTION",
+      "P", "LI", "DT", "DD", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE",
+      "PRE", "CODE", "SPAN", "STRONG", "EM", "B", "I", "SMALL"
+    ]);
+
+    const fileInput = document.getElementById("fileInput");
+    const frame = document.getElementById("previewFrame");
+    const dropZone = document.getElementById("dropZone");
+    const posterSelectorInput = document.getElementById("posterSelector");
+    const selectedTextLabel = document.getElementById("selectedTextLabel");
+    const fontSizeInput = document.getElementById("fontSizeInput");
+    const lineHeightInput = document.getElementById("lineHeightInput");
+    const textColorInput = document.getElementById("textColorInput");
+    const textColorValue = document.getElementById("textColorValue");
+    const clearTextColorButton = document.getElementById("clearTextColor");
+    const colorSwatchButtons = Array.from(document.querySelectorAll(".color-swatch"));
+    const fontSizeDownButton = document.getElementById("fontSizeDown");
+    const fontSizeUpButton = document.getElementById("fontSizeUp");
+    const weightNormalButton = document.getElementById("weightNormal");
+    const weightBoldButton = document.getElementById("weightBold");
+    const resetInlineStyleButton = document.getElementById("resetInlineStyle");
+    const styleControls = [
+      fontSizeDownButton,
+      fontSizeInput,
+      fontSizeUpButton,
+      lineHeightInput,
+      textColorInput,
+      textColorValue,
+      clearTextColorButton,
+      ...colorSwatchButtons,
+      weightNormalButton,
+      weightBoldButton,
+      resetInlineStyleButton
+    ];
+    const scaleInput = document.getElementById("scaleInput");
+    const statusNode = document.getElementById("status");
+    const helpButton = document.getElementById("helpButton");
+    const helpModal = document.getElementById("helpModal");
+    const closeHelpButton = document.getElementById("closeHelp");
+    const toggleEditModeButton = document.getElementById("toggleEditMode");
+
+    let selectedNode = null;
+    let currentFileName = "";
+    let storageKey = "";
+    let sourceSignature = "";
+    let posterNodes = [];
+    let editMode = true;
+
+    function setStatus(text) {
+      statusNode.textContent = text;
+    }
+
+    function hashString(value) {
+      let hash = 0;
+      for (let index = 0; index < value.length; index += 1) {
+        hash = ((hash << 5) - hash + value.charCodeAt(index)) | 0;
+      }
+      return String(hash);
+    }
+
+    function sanitizeIncomingHtml(html) {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      doc.querySelectorAll("[data-ai-editor='true'], .ai-html-editor-toolbar, .editor-toolbar, script[data-editor='true'], script#html2canvas-lib, link[href*='ai-html-editor.css'], script[src*='ai-html-editor.js']").forEach((node) => node.remove());
+      doc.querySelectorAll("[contenteditable], [spellcheck], [data-ai-editable], [data-ai-edit-id], [data-poster-editable], [data-edit-id]").forEach((node) => {
+        node.removeAttribute("contenteditable");
+        node.removeAttribute("spellcheck");
+        node.removeAttribute("data-ai-editable");
+        node.removeAttribute("data-ai-edit-id");
+        node.removeAttribute("data-poster-editable");
+        node.removeAttribute("data-edit-id");
+        node.classList.remove("ai-editor-selected", "is-selected");
+      });
+      doc.body?.classList.remove("ai-editor-preview-mode", "ai-editor-interaction-mode");
+      return "<!doctype html>\n" + doc.documentElement.outerHTML;
+    }
+
+    function injectFrameEditorStyles(doc) {
+      const style = doc.createElement("style");
+      style.setAttribute("data-ai-editor", "true");
+      style.textContent = `
+        [data-ai-editable="true"] {
+          outline: 1px dashed rgba(216, 79, 42, .65);
+          outline-offset: 4px;
+          cursor: text;
+          border-radius: 2px;
+          -webkit-user-select: text;
+          user-select: text;
+        }
+        [data-ai-editable="true"]:focus,
+        [data-ai-editable="true"].ai-editor-selected {
+          outline: 3px solid rgba(216, 79, 42, .92);
+          background: rgba(216, 79, 42, .06);
+        }
+        body.ai-editor-preview-mode [data-ai-editable="true"] {
+          outline: none !important;
+          background: transparent !important;
+        }
+        body.ai-editor-interaction-mode [data-ai-editable="true"] {
+          outline: none !important;
+          background: transparent !important;
+          cursor: auto;
+        }
+      `;
+      doc.head.appendChild(style);
+    }
+
+    function hasUsefulText(node) {
+      return Boolean(node.textContent && node.textContent.replace(/\s+/g, "").length);
+    }
+
+    function hasDirectText(node) {
+      return Array.from(node.childNodes).some((child) => {
+        return child.nodeType === Node.TEXT_NODE && child.textContent.replace(/\s+/g, "").length;
+      });
+    }
+
+    function isVisibleElement(node, win) {
+      const style = win.getComputedStyle(node);
+      return style.display !== "none" && style.visibility !== "hidden";
+    }
+
+    function isForcedEditable(node) {
+      return node.matches("[data-editable], [data-ai-force-editable]");
+    }
+
+    function isSkippableEditableNode(node, win) {
+      if (!node || node.nodeType !== Node.ELEMENT_NODE) return true;
+      if (skippedEditableTags.has(node.tagName)) return true;
+      if (node.closest("[data-ai-editor='true'], .ai-html-editor-toolbar, .editor-toolbar, .export-panel")) return true;
+      if (node.closest("svg")) return true;
+      if (!hasUsefulText(node)) return true;
+      return !isVisibleElement(node, win);
+    }
+
+    function shouldMarkAsEditable(node, win) {
+      if (isSkippableEditableNode(node, win)) return false;
+      if (isForcedEditable(node)) return true;
+      if (preferredTextContainers.has(node.tagName)) return true;
+      if (hasDirectText(node) && (node.children.length === 0 || node.matches(editableSelector))) return true;
+      return node.matches(editableSelector) && node.children.length === 0;
+    }
+
+    function collectEditableCandidates(root, win) {
+      const nodes = [root, ...Array.from(root.querySelectorAll("*"))];
+      const candidates = nodes.filter((node) => shouldMarkAsEditable(node, win));
+      const selected = [];
+
+      candidates.forEach((node) => {
+        const hasSelectedAncestor = selected.some((selectedNode) => selectedNode.contains(node));
+        if (!hasSelectedAncestor) selected.push(node);
+      });
+
+      return selected;
+    }
+
+    function getPosterNodes(doc) {
+      const selector = posterSelectorInput.value.trim() || ".poster";
+      try {
+        const posters = Array.from(doc.querySelectorAll(selector));
+        return posters.length ? posters : [doc.body];
+      } catch (error) {
+        console.warn(error);
+        setStatus("页面选择器无效，暂时按整个页面处理");
+        return [doc.body];
+      }
+    }
+
+    function clearEditableMarks(doc) {
+      doc.querySelectorAll("[data-ai-editable='true']").forEach((node) => {
+        node.removeAttribute("contenteditable");
+        node.removeAttribute("spellcheck");
+        node.removeAttribute("data-ai-editable");
+        node.removeAttribute("data-ai-edit-id");
+        node.classList.remove("ai-editor-selected");
+      });
+      selectedNode = null;
+      refreshStylePanel();
+    }
+
+    function markEditableNodes(doc) {
+      clearEditableMarks(doc);
+      const win = doc.defaultView || frame.contentWindow;
+      const posters = getPosterNodes(doc);
+      posterNodes = posters.length ? posters : [doc.body];
+      posterNodes.forEach((poster, posterIndex) => {
+        collectEditableCandidates(poster, win).forEach((node, index) => {
+          node.setAttribute("contenteditable", "true");
+          node.contentEditable = editMode ? "true" : "false";
+          node.setAttribute("spellcheck", "false");
+          node.setAttribute("data-ai-editable", "true");
+          node.dataset.aiEditId = `${poster.id || `poster-${posterIndex + 1}`}-${index}`;
+        });
+      });
+    }
+
+    function computeSourceSignature(doc) {
+      const base = Array.from(doc.querySelectorAll("[data-ai-editable='true']"))
+        .map((node) => `${node.dataset.aiEditId}:${node.textContent.trim()}:${node.getAttribute("style") || ""}`)
+        .join("|");
+      return hashString(`${currentFileName}|${base}`);
+    }
+
+    function setStyleControlsEnabled(enabled) {
+      styleControls.forEach((control) => {
+        control.disabled = !enabled;
+      });
+    }
+
+    function formatLineHeight(value) {
+      const number = Number.parseFloat(value);
+      if (!Number.isFinite(number)) return "";
+      return Number.isInteger(number) ? String(number) : number.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+    }
+
+    function colorToHex(color) {
+      if (!color) return "#000000";
+      const hex = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+      if (hex) {
+        if (hex[1].length === 3) {
+          return `#${hex[1].split("").map((char) => char + char).join("")}`.toLowerCase();
+        }
+        return color.trim().toLowerCase();
+      }
+      const rgb = color.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+      if (!rgb) return "#000000";
+      return `#${[rgb[1], rgb[2], rgb[3]].map((value) => {
+        return Math.max(0, Math.min(255, Number(value))).toString(16).padStart(2, "0");
+      }).join("")}`;
+    }
+
+    function isValidCssColor(value) {
+      const color = value.trim();
+      if (!color) return false;
+      return frame.contentWindow.CSS?.supports?.("color", color) ?? true;
+    }
+
+    function refreshStylePanel() {
+      if (!editMode) {
+        selectedTextLabel.textContent = "页面交互模式";
+        fontSizeInput.value = "";
+        lineHeightInput.value = "";
+        textColorInput.value = "#000000";
+        textColorValue.value = "";
+        setStyleControlsEnabled(false);
+        return;
+      }
+
+      if (!selectedNode || !frame.contentDocument?.body.contains(selectedNode)) {
+        selectedNode = null;
+        selectedTextLabel.textContent = "未选中文字";
+        fontSizeInput.value = "";
+        lineHeightInput.value = "";
+        textColorInput.value = "#000000";
+        textColorValue.value = "";
+        setStyleControlsEnabled(false);
+        return;
+      }
+
+      const style = frame.contentWindow.getComputedStyle(selectedNode);
+      const fontSize = Number.parseFloat(style.fontSize);
+      const lineHeight = Number.parseFloat(style.lineHeight) / fontSize;
+      selectedTextLabel.textContent = selectedNode.textContent.trim().slice(0, 32) || "已选中文字";
+      fontSizeInput.value = Number.isFinite(fontSize) ? Math.round(fontSize) : "";
+      lineHeightInput.value = Number.isFinite(lineHeight) ? formatLineHeight(lineHeight) : "";
+      textColorInput.value = colorToHex(style.color);
+      textColorValue.value = selectedNode.style.color || textColorInput.value;
+      setStyleControlsEnabled(true);
+    }
+
+    function selectNode(node) {
+      if (!editMode) return;
+      if (!node || !node.matches("[data-ai-editable='true']")) return;
+      if (selectedNode) selectedNode.classList.remove("ai-editor-selected");
+      selectedNode = node;
+      selectedNode.classList.add("ai-editor-selected");
+      refreshStylePanel();
+      setStatus(`正在编辑：${selectedNode.textContent.trim().slice(0, 36) || "空文本"}`);
+    }
+
+    function applyInlineStyle(property, value) {
+      if (!editMode || !selectedNode) {
+        setStatus("先点选一段文字");
+        return;
+      }
+      selectedNode.style[property] = value;
+      refreshStylePanel();
+      saveDraft(false);
+      setStatus("样式已更新");
+    }
+
+    function changeFontSize(delta) {
+      if (!selectedNode) {
+        setStatus("先点选一段文字");
+        return;
+      }
+      const current = Number.parseFloat(frame.contentWindow.getComputedStyle(selectedNode).fontSize);
+      const next = Math.min(240, Math.max(12, Math.round(current + delta)));
+      applyInlineStyle("fontSize", `${next}px`);
+    }
+
+    function resetSelectedTextStyle() {
+      if (!selectedNode) {
+        setStatus("先点选一段文字");
+        return;
+      }
+      selectedNode.style.fontSize = "";
+      selectedNode.style.lineHeight = "";
+      selectedNode.style.fontWeight = "";
+      selectedNode.style.color = "";
+      refreshStylePanel();
+      saveDraft(false);
+      setStatus("已还原当前文字样式");
+    }
+
+    function applyTextColor(value) {
+      const color = value.trim();
+      if (!selectedNode) {
+        setStatus("先点选一段文字");
+        return;
+      }
+      if (!isValidCssColor(color)) {
+        setStatus("颜色值无效，可输入 #111111、rgb(...) 或 var(--accent)");
+        refreshStylePanel();
+        return;
+      }
+      applyInlineStyle("color", color);
+    }
+
+    function clearTextColor() {
+      if (!selectedNode) {
+        setStatus("先点选一段文字");
+        return;
+      }
+      selectedNode.style.color = "";
+      refreshStylePanel();
+      saveDraft(false);
+      setStatus("已还原当前文字颜色");
+    }
+
+    function collectDraft(doc) {
+      const items = {};
+      doc.querySelectorAll("[data-ai-editable='true']").forEach((node) => {
+        items[node.dataset.aiEditId] = {
+          html: node.innerHTML,
+          style: node.getAttribute("style") || ""
+        };
+      });
+      return items;
+    }
+
+    function saveDraft(showStatus = true) {
+      const doc = frame.contentDocument;
+      if (!doc || !storageKey) return;
+      localStorage.setItem(storageKey, JSON.stringify({
+        sourceSignature,
+        savedAt: new Date().toISOString(),
+        items: collectDraft(doc)
+      }));
+      if (showStatus) setStatus("草稿已保存到当前浏览器");
+    }
+
+    function restoreDraft(doc) {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return;
+      try {
+        const draft = JSON.parse(raw);
+        if (!draft || draft.sourceSignature !== sourceSignature || !draft.items) {
+          setStatus("已忽略旧版草稿，当前显示最新 HTML");
+          return;
+        }
+        doc.querySelectorAll("[data-ai-editable='true']").forEach((node) => {
+          const item = draft.items[node.dataset.aiEditId];
+          if (!item) return;
+          node.innerHTML = item.html;
+          if (item.style) node.setAttribute("style", item.style);
+        });
+        setStatus(`已载入 ${currentFileName} 的上次草稿`);
+      } catch (error) {
+        console.warn(error);
+        setStatus("草稿读取失败，可以继续编辑当前版本");
+      }
+    }
+
+    function resetDraft() {
+      if (!storageKey) return;
+      localStorage.removeItem(storageKey);
+      setStatus("草稿已清空，请重新打开当前 HTML");
+    }
+
+    function cleanDocumentClone() {
+      const doc = frame.contentDocument;
+      const clone = doc.documentElement.cloneNode(true);
+      clone.querySelectorAll("[data-ai-editor='true']").forEach((node) => node.remove());
+      clone.querySelectorAll("[contenteditable], [spellcheck], [data-ai-editable], [data-ai-edit-id]").forEach((node) => {
+        node.removeAttribute("contenteditable");
+        node.removeAttribute("spellcheck");
+        node.removeAttribute("data-ai-editable");
+        node.removeAttribute("data-ai-edit-id");
+        node.classList.remove("ai-editor-selected");
+      });
+      clone.querySelector("body")?.classList.remove("ai-editor-preview-mode", "ai-editor-interaction-mode");
+      return "<!doctype html>\n" + clone.outerHTML;
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 600);
+    }
+
+    function exportHtml() {
+      if (!frame.contentDocument) return;
+      saveDraft(false);
+      const baseName = currentFileName.replace(/\.html?$/i, "") || "编辑后HTML";
+      downloadBlob(new Blob([cleanDocumentClone()], { type: "text/html;charset=utf-8" }), `${baseName}-编辑后.html`);
+      setStatus("已导出修改版 HTML");
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function ensureFrameHtml2Canvas() {
+      const doc = frame.contentDocument;
+      const win = frame.contentWindow;
+      if (win.html2canvas) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const script = doc.createElement("script");
+        script.src = "./html2canvas.min.js";
+        script.setAttribute("data-ai-editor", "true");
+        script.onload = resolve;
+        script.onerror = reject;
+        doc.body.appendChild(script);
+      });
+    }
+
+    async function posterToCanvas(poster) {
+      const doc = frame.contentDocument;
+      await ensureFrameHtml2Canvas();
+      doc.body.classList.add("ai-editor-preview-mode");
+      if (selectedNode) selectedNode.classList.remove("ai-editor-selected");
+      await wait(80);
+      const canvas = await frame.contentWindow.html2canvas(poster, {
+        backgroundColor: null,
+        scale: Number(scaleInput.value) || 2,
+        useCORS: true,
+        logging: false,
+        width: poster.offsetWidth,
+        height: poster.offsetHeight
+      });
+      doc.body.classList.remove("ai-editor-preview-mode");
+      if (selectedNode) selectedNode.classList.add("ai-editor-selected");
+      return canvas;
+    }
+
+    async function savePosterAsPng(poster, index) {
+      const canvas = await posterToCanvas(poster);
+      const baseName = currentFileName.replace(/\.html?$/i, "") || "poster";
+      const filename = poster.dataset.exportName || `${baseName}-${String(index + 1).padStart(2, "0")}.png`;
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+          downloadBlob(blob, filename);
+          resolve();
+        }, "image/png");
+      });
+    }
+
+    async function saveCurrentPng() {
+      if (!posterNodes.length) return;
+      let target = posterNodes[0];
+      try {
+        target = selectedNode?.closest(posterSelectorInput.value.trim() || ".poster") || posterNodes[0];
+      } catch (error) {
+        console.warn(error);
+      }
+      const index = Math.max(0, posterNodes.indexOf(target));
+      setStatus("正在保存当前图");
+      await savePosterAsPng(target, index);
+      setStatus("当前图已保存");
+    }
+
+    async function saveAllPng() {
+      if (!posterNodes.length) return;
+      setStatus("正在保存全部图");
+      for (let index = 0; index < posterNodes.length; index += 1) {
+        await savePosterAsPng(posterNodes[index], index);
+        await wait(160);
+      }
+      setStatus("全部图已保存");
+    }
+
+    function toggleGuides() {
+      const doc = frame.contentDocument;
+      if (!doc) return;
+      doc.body.classList.toggle("ai-editor-preview-mode");
+      document.getElementById("toggleGuides").textContent = doc.body.classList.contains("ai-editor-preview-mode") ? "显示边框" : "隐藏边框";
+    }
+
+    function wireFrameEvents(doc) {
+      doc.addEventListener("focusin", (event) => {
+        if (!editMode) return;
+        const editable = event.target.closest?.("[data-ai-editable='true']");
+        if (editable) selectNode(editable);
+      });
+
+      doc.addEventListener("click", (event) => {
+        if (!editMode || event.altKey) return;
+        const editable = event.target.closest?.("[data-ai-editable='true']");
+        if (!editable) return;
+        event.preventDefault();
+        event.stopPropagation();
+        selectNode(editable);
+      }, true);
+
+      doc.addEventListener("input", (event) => {
+        if (editMode && event.target.matches("[data-ai-editable='true']")) saveDraft(false);
+      });
+    }
+
+    function syncEditMode(doc = frame.contentDocument) {
+      if (!doc) return;
+      doc.body.classList.toggle("ai-editor-interaction-mode", !editMode);
+      doc.querySelectorAll("[data-ai-editable='true']").forEach((node) => {
+        node.contentEditable = editMode ? "true" : "false";
+      });
+      toggleEditModeButton.textContent = editMode ? "切到交互" : "切回编辑";
+      if (!editMode && selectedNode) selectedNode.classList.remove("ai-editor-selected");
+      refreshStylePanel();
+    }
+
+    function toggleEditMode() {
+      editMode = !editMode;
+      syncEditMode();
+      setStatus(editMode ? "编辑模式：点文字修改内容和样式" : "页面交互模式：可以切换 Tab、点击按钮；按住 Option 点击也可临时放行");
+    }
+
+    function initializeFrame(fileName, originalHtml) {
+      const doc = frame.contentDocument;
+      currentFileName = fileName || "未命名.html";
+      storageKey = `ai-html-light-editor:${currentFileName}:${hashString(originalHtml)}`;
+      injectFrameEditorStyles(doc);
+      markEditableNodes(doc);
+      sourceSignature = computeSourceSignature(doc);
+      restoreDraft(doc);
+      wireFrameEvents(doc);
+      document.body.classList.add("has-document");
+      syncEditMode(doc);
+      selectNode(doc.querySelector("[data-ai-editable='true']"));
+      const editableCount = doc.querySelectorAll("[data-ai-editable='true']").length;
+      setStatus(`已打开：${currentFileName}，识别到 ${posterNodes.length} 张页面、${editableCount} 处文字`);
+    }
+
+    function loadHtmlFile(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const originalHtml = String(reader.result || "");
+        const safeHtml = sanitizeIncomingHtml(originalHtml);
+        frame.onload = () => initializeFrame(file.name, originalHtml);
+        frame.srcdoc = safeHtml;
+      };
+      reader.readAsText(file, "utf-8");
+    }
+
+    fileInput.addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      if (file) loadHtmlFile(file);
+    });
+
+    dropZone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      dropZone.style.borderColor = "rgba(216,79,42,.9)";
+    });
+
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.style.borderColor = "rgba(255,255,255,.3)";
+    });
+
+    dropZone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      dropZone.style.borderColor = "rgba(255,255,255,.3)";
+      const file = event.dataTransfer.files?.[0];
+      if (file) loadHtmlFile(file);
+    });
+
+    posterSelectorInput.addEventListener("change", () => {
+      if (!frame.contentDocument) return;
+      markEditableNodes(frame.contentDocument);
+      sourceSignature = computeSourceSignature(frame.contentDocument);
+      syncEditMode(frame.contentDocument);
+      selectNode(frame.contentDocument.querySelector("[data-ai-editable='true']"));
+      const editableCount = frame.contentDocument.querySelectorAll("[data-ai-editable='true']").length;
+      setStatus(`页面选择器已更新，识别到 ${posterNodes.length} 张页面、${editableCount} 处文字`);
+    });
+
+    setStyleControlsEnabled(false);
+    fontSizeDownButton.addEventListener("click", () => changeFontSize(-2));
+    fontSizeUpButton.addEventListener("click", () => changeFontSize(2));
+    fontSizeInput.addEventListener("change", () => {
+      if (fontSizeInput.value.trim() === "") return;
+      const size = Math.min(240, Math.max(12, Number(fontSizeInput.value)));
+      if (Number.isFinite(size)) applyInlineStyle("fontSize", `${size}px`);
+    });
+    lineHeightInput.addEventListener("change", () => {
+      if (lineHeightInput.value.trim() === "") return;
+      const lineHeight = Math.min(2.4, Math.max(.8, Number(lineHeightInput.value)));
+      if (Number.isFinite(lineHeight)) applyInlineStyle("lineHeight", formatLineHeight(lineHeight));
+    });
+    textColorInput.addEventListener("input", () => applyTextColor(textColorInput.value));
+    textColorInput.addEventListener("change", () => applyTextColor(textColorInput.value));
+    textColorValue.addEventListener("change", () => applyTextColor(textColorValue.value));
+    textColorValue.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        applyTextColor(textColorValue.value);
+      }
+    });
+    colorSwatchButtons.forEach((button) => {
+      button.addEventListener("click", () => applyTextColor(button.dataset.color || ""));
+    });
+    clearTextColorButton.addEventListener("click", clearTextColor);
+    toggleEditModeButton.addEventListener("click", toggleEditMode);
+    weightNormalButton.addEventListener("click", () => applyInlineStyle("fontWeight", "400"));
+    weightBoldButton.addEventListener("click", () => applyInlineStyle("fontWeight", "700"));
+    resetInlineStyleButton.addEventListener("click", resetSelectedTextStyle);
+    helpButton.addEventListener("click", () => helpModal.classList.add("open"));
+    closeHelpButton.addEventListener("click", () => helpModal.classList.remove("open"));
+    helpModal.addEventListener("click", (event) => {
+      if (event.target === helpModal) helpModal.classList.remove("open");
+    });
+    document.getElementById("saveDraft").addEventListener("click", () => saveDraft());
+    document.getElementById("resetDraft").addEventListener("click", resetDraft);
+    document.getElementById("exportHtml").addEventListener("click", exportHtml);
+    document.getElementById("toggleGuides").addEventListener("click", toggleGuides);
+    document.getElementById("saveCurrentPng").addEventListener("click", saveCurrentPng);
+    document.getElementById("saveAllPng").addEventListener("click", saveAllPng);
+
+    document.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        saveDraft();
+      }
+    });
+  </script>
+</body>
+</html>

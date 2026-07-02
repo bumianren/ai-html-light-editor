@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 生成 HTML 模板</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: #1d1f22;
+      padding: 48px 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+      color: #14161a;
+    }
+    .sheet {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+    }
+    .poster {
+      width: 1080px;
+      height: 1440px;
+      background: #f7f3ea;
+      padding: 88px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .kicker {
+      font-size: 24px;
+      letter-spacing: .12em;
+      color: #d84f2a;
+      font-weight: 700;
+    }
+    .title {
+      margin: 0;
+      font-size: 92px;
+      line-height: 1.08;
+      font-weight: 800;
+    }
+    .lead {
+      margin: 30px 0 0;
+      font-size: 38px;
+      line-height: 1.45;
+      color: #4e514e;
+      font-weight: 500;
+    }
+    .body {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.55;
+      color: #14161a;
+    }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <section class="poster" data-export-name="page-01.png">
+      <div>
+        <div class="kicker">LEARNING CARD</div>
+        <h1 class="title">这里放一张学习卡片的主标题</h1>
+        <p class="lead">这里放副标题或解释文字。打开编辑器后，这些文字都可以直接点击修改。</p>
+      </div>
+      <p class="body">建议每张卡只讲一个观点。AI 负责先生成样式和内容，人负责最后修改细节。</p>
+    </section>
+
+    <section class="poster" data-export-name="page-02.png">
+      <div>
+        <div class="kicker">SECOND PAGE</div>
+        <h1 class="title">每一页都用 .poster 包起来</h1>
+        <p class="lead">这样编辑器就能识别页数，并支持逐页导出图片。</p>
+      </div>
+      <p class="body">如果需要 16:9 页面，可以把 `.poster` 改成 `width: 1920px; height: 1080px;`。</p>
+    </section>
+  </main>
+</body>
+</html>
