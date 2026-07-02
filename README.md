@@ -18,7 +18,9 @@
 
 ## 本地使用
 
-1. 下载 Release 里的 `AI-HTML-Light-Editor.zip`
+1. 下载 dist 文件夹里的 `AI-HTML-Light-Editor.zip`   
+[dist/AI-HTML-Light-Editor-v0.1.0.zip
+](https://github.com/bumianren/ai-html-light-editor/dist/AI-HTML-Light-Editor-v0.1.0.zip)
 2. 解压后双击打开 `index.html`
 3. 点击「打开 HTML」，选择 AI 生成的 `.html` 文件
 4. 点页面里的文字直接修改
