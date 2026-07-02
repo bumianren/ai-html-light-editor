@@ -18,16 +18,14 @@
 
 ## 本地使用
 
-1. 下载 dist 文件夹里的 `AI-HTML-Light-Editor.zip`   
-[dist/AI-HTML-Light-Editor-v0.1.0.zip
-](https://github.com/bumianren/ai-html-light-editor/dist/AI-HTML-Light-Editor-v0.1.0.zip)
-2. 解压后双击打开 `index.html`
-3. 点击「打开 HTML」，选择 AI 生成的 `.html` 文件
-4. 点页面里的文字直接修改
-5. 选中文字块后，调整字号、行高、颜色、字重
-6. 需要点击页面里的 Tab、按钮或链接时，点击「切到交互」，完成后再「切回编辑」
-7. 点击「导出 HTML」保存修改版
-8. 点击「保存当前图」或「保存全部图」导出 PNG
+1. 下载 dist 文件夹里的 `[AI-HTML-Light-Editor.zip](https://github.com/bumianren/ai-html-light-editor/tree/main/dist)` 
+3. 解压后双击打开 `index.html`
+4. 点击「打开 HTML」，选择 AI 生成的 `.html` 文件
+5. 点页面里的文字直接修改
+6. 选中文字块后，调整字号、行高、颜色、字重
+7. 需要点击页面里的 Tab、按钮或链接时，点击「切到交互」，完成后再「切回编辑」
+8. 点击「导出 HTML」保存修改版
+9. 点击「保存当前图」或「保存全部图」导出 PNG
 
 ## 核心能力
 
