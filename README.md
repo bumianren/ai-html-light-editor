@@ -1,8 +1,19 @@
 # AI-HTML Light Editor
 
 一个本地打开即可使用的 AI 生成 HTML 微调工具。
-
 它适合处理 AI 生成的海报、学习卡片、HTML 风格 PPT、培训项目汇报页、数据看板截图页。AI 先生成 80%-90%，你再用这个工具快速改错字、调字号、调颜色、切换页面状态、导出图片。
+
+我平时特别喜欢用Html来实现PPT的功能，但是，PPT生成html有几个问题
+1. 样式一般很好，但内容总是抓不住重点，有时候就需要自己动手
+2. 有一些文案不好，颜色差一点意思，这时候用提示词去让AI修改，AI总是听不明白，改半天也改不对
+3. 生成html要发给别人比较麻烦，就需要截图，但截图清晰度、位置都不太好。
+4. 利用Skill生成小红书等图片，样式没问题，但要变成图片还是略显麻烦
+
+因此，做了这么个微调工具，基本上能满足“我快速上手改一下”的需求，不用指挥半天AI，它又听不明白你干瞪眼还浪费token，我自己使用过程感觉能满足90%的场景需求。
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a00fb773-5c30-45af-b637-d0b30aac6029" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6e31103e-88bf-4333-8d32-4f5b48ddb9d3" />
 
 
 ## 本地使用
